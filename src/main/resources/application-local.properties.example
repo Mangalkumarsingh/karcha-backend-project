@@ -1,0 +1,8 @@
+# ===================================================================
+# Local Supabase Configuration Template
+# Copy this file to 'application-local.properties' and fill in your credentials.
+# NOTE: application-local.properties is ignored by git and never committed.
+# ===================================================================
+spring.datasource.url=jdbc:postgresql://<SUPABASE_HOST>:5432/postgres
+spring.datasource.username=postgres.<PROJECT_REF>
+spring.datasource.password=<YOUR_PASSWORD>

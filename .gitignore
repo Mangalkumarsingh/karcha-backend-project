@@ -4,6 +4,11 @@ build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
+### Local Configuration & Secrets ###
+**/*-local.properties
+**/application-local.properties
+.env
+*.env
 
 ### STS ###
 .apt_generated

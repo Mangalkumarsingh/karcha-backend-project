@@ -1,0 +1,10 @@
+.git
+.gradle
+build
+.vscode
+.idea
+.env
+.env.*
+**/application-local.properties
+**/application-*.local.properties
+*.log
