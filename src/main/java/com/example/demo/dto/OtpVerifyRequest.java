@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Pattern;
 
 public record OtpVerifyRequest(
     @NotBlank
-    @Pattern(regexp = "^\\+[1-9][0-9]{7,14}$", message = "Phone number must be in E.164 format")
+    @Pattern(regexp = "^(\\+[1-9][0-9]{7,14}|[0-9]{10})$", message = "Phone number must be a 10-digit number or in E.164 format")
     String phoneNumber,
 
     @NotBlank

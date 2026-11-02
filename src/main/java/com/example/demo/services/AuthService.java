@@ -3,6 +3,7 @@ package com.example.demo.services;
 import com.example.demo.dto.*;
 import com.example.demo.model.AppUser;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.util.PhoneUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -23,6 +24,9 @@ import static org.springframework.http.HttpStatus.*;
 @RequiredArgsConstructor
 public class AuthService {
 
+    public static final String DUMMY_PHONE_NUMBER = "+916207210408";
+    public static final String DUMMY_OTP = "123456";
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final GoogleIdTokenVerifier googleVerifier;
@@ -34,7 +38,7 @@ public class AuthService {
     @Transactional
     public void requestOtp(OtpRequest request) {
 
-        String phone = request.phoneNumber();
+        String phone = PhoneUtil.normalizePhoneNumber(request.phoneNumber());
 
         AppUser user = userRepository.findByPhoneNumber(phone)
             .orElseGet(() ->
@@ -47,6 +51,16 @@ public class AuthService {
             );
 
         Instant now = Instant.now();
+
+        // Check if dummy test number
+        if (DUMMY_PHONE_NUMBER.equals(phone)) {
+            user.setOtpHash(passwordEncoder.encode(DUMMY_OTP));
+            user.setOtpExpiryTime(now.plus(1, ChronoUnit.DAYS));
+            user.setOtpLastSentAt(now);
+            user.setOtpAttempts(0);
+            userRepository.save(user);
+            return;
+        }
 
         if (user.getOtpLastSentAt() != null &&
             now.isBefore(user.getOtpLastSentAt().plusSeconds(60))) {
@@ -75,8 +89,33 @@ public class AuthService {
     @Transactional
     public AuthResponse verifyOtp(OtpVerifyRequest request) {
 
+        String phone = PhoneUtil.normalizePhoneNumber(request.phoneNumber());
+
+        // Support test dummy credentials directly
+        if (DUMMY_PHONE_NUMBER.equals(phone) && DUMMY_OTP.equals(request.otp())) {
+            AppUser user = userRepository
+                .findByPhoneNumber(phone)
+                .orElseGet(() ->
+                    userRepository.save(
+                        AppUser.builder()
+                            .phoneNumber(phone)
+                            .phoneVerified(true)
+                            .build()
+                    )
+                );
+
+            boolean isNewUser = !user.isPhoneVerified();
+            user.setPhoneVerified(true);
+            user.setOtpHash(null);
+            user.setOtpExpiryTime(null);
+            user.setOtpAttempts(0);
+            userRepository.save(user);
+
+            return buildResponse(user, "PHONE", isNewUser);
+        }
+
         AppUser user = userRepository
-            .findByPhoneNumber(request.phoneNumber())
+            .findByPhoneNumber(phone)
             .orElseThrow(() ->
                 new ResponseStatusException(
                     UNAUTHORIZED, "Invalid or expired OTP"
